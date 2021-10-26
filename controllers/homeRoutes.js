@@ -1,5 +1,6 @@
 const router = require('express').Router();
-const { Project, User } = require('../models');
+// const { where } = require('sequelize/types');
+const { Comment, User, Post } = require('../models');
 const withAuth = require('../utils/auth');
 
 router.get('/', async (req, res) => {
@@ -19,10 +20,11 @@ router.get('/', async (req, res) => {
 
     // Pass serialized data and session flag into template
     res.render('homepage', { 
-      post, 
+      posts, 
       logged_in: req.session.logged_in 
     });
   } catch (err) {
+    console.log(err);
     res.status(500).json(err);
   }
 });
@@ -35,6 +37,10 @@ router.get('/post/:id', async (req, res) => {
           model: User,
           attributes: ['name'],
         },
+        {
+          model: Post,
+          attributes: ['id'],
+        },
       ],
     });
 
@@ -45,6 +51,7 @@ router.get('/post/:id', async (req, res) => {
       logged_in: req.session.logged_in
     });
   } catch (err) {
+    console.log(err);
     res.status(500).json(err);
   }
 });
@@ -53,15 +60,25 @@ router.get('/post/:id', async (req, res) => {
 router.get('/profile', withAuth, async (req, res) => {
   try {
     // Find the logged in user based on the session ID
-    const userData = await User.findByPk(req.session.user_id, {
-      attributes: { exclude: ['password'] },
-      include: [{ model: Project }],
-    });
+    const postData = await Post.findAll(
+      {where: {
+        user_id: req.session.user_id, 
+      }, include: [
 
-    const user = userData.get({ plain: true });
+      ]
+
+    },
+      
+      // {
+    //   attributes: { exclude: ['password'] },
+    //   include: [{ model: Comment }],
+    // }
+    );
+
+    const posts = postData.get({ plain: true });
 
     res.render('profile', {
-      ...user,
+      posts,
       logged_in: true
     });
   } catch (err) {
